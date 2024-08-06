@@ -1,62 +1,71 @@
-#include <SDL2/SDL.h>
-#include <stdio.h>
+#include "include/game.h"
 
-int main(int argc, char* argv[]) {
-    // Initialize SDL
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-        printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
-        return 1;
-    }
+void render_map(t_sdl *SDL, char map[7][10])
+{
+    int map_width = 9 * CELL_SIZE;
+    int map_height = 7 * CELL_SIZE;
+    int offset_x = (SDL->width - map_width) / 2;
+    int offset_y = (SDL->height - map_height) / 2;
 
-    // Create a window
-    SDL_Window* window = SDL_CreateWindow("SDL Test Window",
-                                          SDL_WINDOWPOS_UNDEFINED,
-                                          SDL_WINDOWPOS_UNDEFINED,
-                                          800, 600,
-                                          SDL_WINDOW_SHOWN);
-    if (window == NULL) {
-        printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
-        SDL_Quit();
-        return 1;
-    }
-
-    // Create a renderer
-    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    if (renderer == NULL) {
-        printf("Renderer could not be created! SDL_Error: %s\n", SDL_GetError());
-        SDL_DestroyWindow(window);
-        SDL_Quit();
-        return 1;
-    }
-
-    // Main loop flag
-    bool quit = false;
-
-    // Event handler
-    SDL_Event e;
-
-    // While the application is running
-    while (!quit) {
-        // Handle events on the queue
-        while (SDL_PollEvent(&e) != 0) {
-            // User requests quit
-            if (e.type == SDL_QUIT) {
-                quit = true;
+    for (int y = 0; y < 7; y++)
+    {
+        for (int x = 0; x < 9; x++)
+        {
+            SDL_Rect cell = {offset_x + x * CELL_SIZE, offset_y + y * CELL_SIZE, CELL_SIZE, CELL_SIZE};
+            if (map[y][x] == '1')
+            {
+                SDL_SetRenderDrawColor(SDL->renderer, 255, 255, 255, 255); // White for walls
             }
+            else if (map[y][x] == '0')
+            {
+                SDL_SetRenderDrawColor(SDL->renderer, 0, 0, 0, 255); // Black for empty space
+            }
+            else if (map[y][x] == 'P')
+            {
+                SDL_SetRenderDrawColor(SDL->renderer, 255, 0, 0, 255); // Red for player
+            }
+            SDL_RenderFillRect(SDL->renderer, &cell);
         }
+    }
+}
 
-        // Clear screen with a blue color
-        SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0xFF, 0xFF);
-        SDL_RenderClear(renderer);
 
-        // Update screen
-        SDL_RenderPresent(renderer);
+void read_map(const char *filename, char map[7][10])
+{
+    FILE *file = fopen(filename, "r");
+    if (!file)
+    {
+        fprintf(stderr, "Failed to open map file.\n");
+        exit(1);
     }
 
-    // Destroy renderer and window
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
-    SDL_Quit();
+    for (int i = 0; i < 7; i++)
+    {
+        fgets(map[i], 10, file);
+    }
 
-    return 0;
+    fclose(file);
+}
+
+
+int	main(int argc, char* argv[])
+{
+	t_sdl		SDL;
+	SDL_Event	event;
+	int 		game;
+	char		map[7][10];
+
+	game = 0;
+	read_map("maps/1.txt", map);
+	init(&SDL);
+	while (!game)
+	{
+		handler(&event, &game);
+        SDL_SetRenderDrawColor(SDL.renderer, 0, 0, 0, 255);
+        SDL_RenderClear(SDL.renderer);
+        render_map(&SDL, map);
+        SDL_RenderPresent(SDL.renderer);
+	}
+	cleanup(&SDL);
+	return 0;
 }
