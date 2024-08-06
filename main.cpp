@@ -1,15 +1,15 @@
 #include "include/game.h"
 
-void render_map(t_sdl *SDL, char map[7][10])
+void render_map(t_sdl *SDL, char **map, int rows, int cols)
 {
-    int map_width = 9 * CELL_SIZE;
-    int map_height = 7 * CELL_SIZE;
+    int map_width = cols * CELL_SIZE;
+    int map_height = rows * CELL_SIZE;
     int offset_x = (SDL->width - map_width) / 2;
     int offset_y = (SDL->height - map_height) / 2;
 
-    for (int y = 0; y < 7; y++)
+    for (int y = 0; y < rows; y++)
     {
-        for (int x = 0; x < 9; x++)
+        for (int x = 0; x < cols; x++)
         {
             SDL_Rect cell = {offset_x + x * CELL_SIZE, offset_y + y * CELL_SIZE, CELL_SIZE, CELL_SIZE};
             if (map[y][x] == '1')
@@ -24,13 +24,17 @@ void render_map(t_sdl *SDL, char map[7][10])
             {
                 SDL_SetRenderDrawColor(SDL->renderer, 255, 0, 0, 255); // Red for player
             }
+            else
+            {
+                SDL_SetRenderDrawColor(SDL->renderer, 0, 0, 255, 255); // Blue for undefined
+            }
             SDL_RenderFillRect(SDL->renderer, &cell);
         }
     }
 }
 
 
-void read_map(const char *filename, char map[7][10])
+char** read_map(const char *filename, int *rows, int *cols)
 {
     FILE *file = fopen(filename, "r");
     if (!file)
@@ -39,31 +43,64 @@ void read_map(const char *filename, char map[7][10])
         exit(1);
     }
 
-    char buffer[11]; // 10 characters + 1 null terminator
+    // Initial buffer size for reading lines
+    size_t buffer_size = 128;
+    char *buffer = (char *)malloc(buffer_size);
 
-    for (int i = 0; i < 7; i++)
+    // Determine the number of rows and columns
+    *rows = 0;
+    *cols = 0;
+    while (fgets(buffer, buffer_size, file))
     {
-        if (fgets(buffer, sizeof(buffer), file))
+        // Reallocate buffer if the line is too long
+        while (strchr(buffer, '\n') == NULL && !feof(file))
         {
-            // Remove the newline character if present
-            buffer[strcspn(buffer, "\n")] = '\0';
-
-            // Copy exactly 10 characters to map[i], padding with spaces if necessary
-            strncpy(map[i], buffer, 10);
-            for (int j = strlen(buffer); j < 10; j++)
-            {
-                map[i][j] = ' '; // pad with spaces
-            }
+            buffer_size *= 2;
+            buffer = (char *)realloc(buffer, buffer_size);
+            fgets(buffer + strlen(buffer), buffer_size / 2, file);
         }
-        else
+
+        (*rows)++;
+        int len = strlen(buffer);
+        if (buffer[len - 1] == '\n')
         {
-            fprintf(stderr, "Failed to read line %d from map file.\n", i + 1);
-            fclose(file);
-            exit(1);
+            buffer[len - 1] = '\0';
+            len--;
+        }
+        if (len > *cols)
+        {
+            *cols = len;
         }
     }
 
+    // Allocate map
+    char **map = (char **)malloc(*rows * sizeof(char *));
+    for (int i = 0; i < *rows; i++)
+    {
+        map[i] = (char *)malloc(*cols * sizeof(char));
+    }
+
+    // Read the file again to fill the map
+    rewind(file);
+    for (int i = 0; i < *rows; i++)
+    {
+        fgets(buffer, buffer_size, file);
+        for (int j = 0; j < *cols; j++)
+        {
+            if (j < strlen(buffer))
+            {
+                map[i][j] = buffer[j];
+            }
+            else
+            {
+                map[i][j] = ' '; // pad with spaces if line is shorter
+            }
+        }
+    }
+
+    free(buffer);
     fclose(file);
+    return map;
 }
 
 
@@ -71,20 +108,20 @@ int	main(int argc, char* argv[])
 {
 	t_sdl		SDL;
 	SDL_Event	event;
-	int 		game;
-	char		map[7][10];
+	int 		game, rows, cols;
+	char		**map;
 
 	game = 0;
-	read_map("maps/1.txt", map);
+	map = read_map("maps/1.txt", &rows, &cols);
 	init(&SDL);
 	while (!game)
 	{
 		handler(&event, &game);
         SDL_SetRenderDrawColor(SDL.renderer, 0, 0, 0, 255);
         SDL_RenderClear(SDL.renderer);
-        render_map(&SDL, map);
+        render_map(&SDL, map, rows, cols);
         SDL_RenderPresent(SDL.renderer);
 	}
-	cleanup(&SDL);
+	cleanup(map, rows, &SDL);
 	return 0;
 }
