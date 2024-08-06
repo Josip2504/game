@@ -1,6 +1,6 @@
 #include "../include/game.h"
 
-void	init(s_sdl	*SDL)
+void	init(t_sdl	*SDL)
 {
 	SDL_Init(SDL_INIT_VIDEO);
 	SDL_GetCurrentDisplayMode(0, &SDL->display_mode);

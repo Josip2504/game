@@ -4,6 +4,7 @@
 # include <SDL2/SDL.h>
 # include <stdio.h>
 # include <stdlib.h>
+# include <string.h>
 
 # define CELL_SIZE 64
 
@@ -17,13 +18,13 @@ typedef struct	s_sdl
 }		t_sdl;
 
 // init
-void	init(s_sdl	*SDL);
+void	init(t_sdl	*SDL);
 
 // render
 void	render(t_sdl *SDL);
 void	handler(SDL_Event *event, int *game);
 
 // cleanup
-void	cleanup(s_sdl *SDL);
+void	cleanup(t_sdl *SDL);
 
 #endif

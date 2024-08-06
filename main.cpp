@@ -39,9 +39,28 @@ void read_map(const char *filename, char map[7][10])
         exit(1);
     }
 
+    char buffer[11]; // 10 characters + 1 null terminator
+
     for (int i = 0; i < 7; i++)
     {
-        fgets(map[i], 10, file);
+        if (fgets(buffer, sizeof(buffer), file))
+        {
+            // Remove the newline character if present
+            buffer[strcspn(buffer, "\n")] = '\0';
+
+            // Copy exactly 10 characters to map[i], padding with spaces if necessary
+            strncpy(map[i], buffer, 10);
+            for (int j = strlen(buffer); j < 10; j++)
+            {
+                map[i][j] = ' '; // pad with spaces
+            }
+        }
+        else
+        {
+            fprintf(stderr, "Failed to read line %d from map file.\n", i + 1);
+            fclose(file);
+            exit(1);
+        }
     }
 
     fclose(file);
