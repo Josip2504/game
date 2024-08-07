@@ -8,6 +8,16 @@
 
 # define CELL_SIZE 64
 
+typedef struct	s_data
+{
+	int game;
+	int rows;
+	int cols;
+	int player_x;
+	int player_y;
+}			t_data;
+
+
 typedef struct	s_sdl
 {
 	SDL_DisplayMode	display_mode;
@@ -17,16 +27,16 @@ typedef struct	s_sdl
 	int 			height;
 }		t_sdl;
 
-//render
-char**	read_map(const char *filename, int *rows, int *cols);
+// render
+void	render(t_sdl *SDL);
+char	**read_map(const char *filename, t_data *d);
 void	render_map(t_sdl *SDL, char **map, int rows, int cols);
 
 // init
 void	init(t_sdl	*SDL);
 
-// render
-void	render(t_sdl *SDL);
-void	handler(SDL_Event *event, int *game);
+// loop
+void	handle_input(char **map, t_data *d, SDL_Event *event);
 
 // cleanup
 void	cleanup(char **map, int rows, t_sdl *SDL);
